@@ -6,3 +6,4 @@
 #players = $initplayers
 #info = $initinfo
 player role = $initrole @role
+guild id = $initguild
