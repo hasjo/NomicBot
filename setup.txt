@@ -1,0 +1,8 @@
+#rules channel = $initruels
+#proposal channel = $initproposal
+#control channel = $initcontrol
+#repeal-deny channel = $initdeny
+#log channel = $initlog
+#players = $initplayers
+#info = $initinfo
+player role = $initrole @role

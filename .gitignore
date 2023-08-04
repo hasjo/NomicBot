@@ -1,3 +1,8 @@
+*.swp
+info.txt
+prod-info.txt
+*.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
