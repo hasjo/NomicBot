@@ -67,6 +67,15 @@ async def initproposal(ctx):
     save_dict()
 
 @bot.command()
+async def initmoney(ctx):
+    channelid=ctx.channel.id
+    datadict['moneychannel'] = channelid
+    datadict['money'] = {}
+    await ctx.message.delete()
+    print(f"CHANNEL ID: {channelid}")
+    save_dict()
+
+@bot.command()
 async def initcontrol(ctx):
     channelid=ctx.channel.id
     datadict['controlchannel'] = channelid
@@ -185,6 +194,74 @@ async def gimme(ctx):
     game_role = ctx.guild.get_role(role_id)
     if not ctx.author.get_role(role_id):
         await ctx.author.add_roles(game_role)
+
+@bot.command()
+async def moneyname(ctx):
+    if ctx.channel.id == datadict['controlchannel']:
+        message = ctx.message.content
+        cmd, name = message.split(' ', 1)
+        datadict['money']['name'] = name
+        save_dict()
+
+@bot.command()
+async def mint(ctx):
+    if ctx.channel.id == datadict['controlchannel']:
+        message = ctx.message.content
+        cmd, target, amount = message.split(' ', 2)
+        amount = int(amount)
+        mentioned = ctx.message.mentions[0]
+        player_id = str(mentioned.id)
+        log_channel = datadict['logchannel']
+        logchannelobj = await ctx.guild.fetch_channel(log_channel)
+        money_channel = datadict['moneychannel']
+        moneychannelobj = await ctx.guild.fetch_channel(money_channel)
+        moneyname = datadict['money']['name']
+        if player_id not in datadict['money']:
+            datadict['money'][player_id] = {}
+            datadict['money'][player_id]['money'] = amount
+            moneymsg = await moneychannelobj.send(f"{mentioned.mention} - {amount} {moneyname}(s)")
+            datadict['money'][player_id]['messageid'] = moneymsg.id
+        else:
+            datadict['money'][player_id]['money'] += amount
+            moneycount = datadict['money'][player_id]['money']
+            moneymsg = datadict['money'][player_id]['messageid']
+            playermsg = await moneychannelobj.fetch_message(moneymsg)
+            await playermsg.edit(content=f"{mentioned.mention} - {moneycount} {moneyname}(s)")
+        await logchannelobj.send(f"{mentioned.mention} has received {amount} NEW {moneyname}(s)")
+        save_dict()
+
+@bot.command()
+async def give(ctx):
+    message = ctx.message.content
+    cmd, target, amount = message.split(' ', 2)
+    amount = int(amount)
+    mentioned = ctx.message.mentions[0]
+    senderobj = ctx.message.author
+    sender_id = str(senderobj.id)
+    recipient_id = str(mentioned.id)
+    log_channel = datadict['logchannel']
+    logchannelobj = await ctx.guild.fetch_channel(log_channel)
+    money_channel = datadict['moneychannel']
+    moneychannelobj = await ctx.guild.fetch_channel(money_channel)
+    moneyname = datadict['money']['name']
+    sendertotal = datadict['money'][sender_id]['money']
+    if amount > sendertotal:
+        await ctx.send(f"YOU DONT HAVE ENOUGH {moneyname}s YA GOOFBALL")
+    else:
+        datadict['money'][recipient_id]['money'] += amount
+        datadict['money'][sender_id]['money'] -= amount
+        recipient_money = datadict['money'][recipient_id]['money']
+        sender_money = datadict['money'][sender_id]['money']
+        recipient_msg_id = datadict['money'][recipient_id]['messageid']
+        sender_msg_id = datadict['money'][sender_id]['messageid']
+        recipientmsg = await moneychannelobj.fetch_message(recipient_msg_id)
+        await recipientmsg.edit(content=f"{mentioned.mention} - {recipient_money} {moneyname}(s)")
+        sendermsg = await moneychannelobj.fetch_message(sender_msg_id)
+        await sendermsg.edit(content=f"{mentioned.mention} - {sender_money} {moneyname}(s)")
+
+        await logchannelobj.send(f"{senderobj.mention} has sent {amount} {moneyname}(s) to {mentioned.mention}")
+        save_dict()
+        
 
 @bot.command()
 async def yes(ctx):
