@@ -257,7 +257,7 @@ async def give(ctx):
         recipientmsg = await moneychannelobj.fetch_message(recipient_msg_id)
         await recipientmsg.edit(content=f"{mentioned.mention} - {recipient_money} {moneyname}(s)")
         sendermsg = await moneychannelobj.fetch_message(sender_msg_id)
-        await sendermsg.edit(content=f"{mentioned.mention} - {sender_money} {moneyname}(s)")
+        await sendermsg.edit(content=f"{senderobj.mention} - {sender_money} {moneyname}(s)")
 
         await logchannelobj.send(f"{senderobj.mention} has sent {amount} {moneyname}(s) to {mentioned.mention}")
         save_dict()
@@ -337,7 +337,7 @@ async def join(ctx):
 
 @bot.command()
 async def leave(ctx):
-    author_id = ctx.author.id
+    author_id = str(ctx.author.id)
     player_message_id = datadict['players'][author_id]['messageid']
     role_id = datadict['gamerole']
     game_role = ctx.guild.get_role(role_id)
