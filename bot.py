@@ -76,6 +76,15 @@ async def initmoney(ctx):
     save_dict()
 
 @bot.command()
+async def initpoints(ctx):
+    channelid=ctx.channel.id
+    datadict['pointschannel'] = channelid
+    datadict['points'] = {}
+    await ctx.message.delete()
+    print(f"CHANNEL ID: {channelid}")
+    save_dict()
+
+@bot.command()
 async def initcontrol(ctx):
     channelid=ctx.channel.id
     datadict['controlchannel'] = channelid
@@ -170,10 +179,18 @@ TO LEAVE THE GAME:
 
 type "$leave" in a channel, and you will be removed from the game
     '''
+    msg5 = '''
+MORE COMMANDS AND WHAT YOU WOULD USE THEM FOR:
+
+- $give <player@> <amount> - give player amount of your money
+- $burn <amount> - burn an amount of points, maybe for transformation, maybe for other reasons
+- $shred <amount> - shred an amount of money, maybe for transformation, maybe for other reasons
+    '''
     await ctx.send(msg1)
     await ctx.send(msg2)
     await ctx.send(msg3)
     await ctx.send(msg4)
+    await ctx.send(msg5)
     await ctx.message.delete()
 
 @bot.command()
@@ -204,6 +221,27 @@ async def moneyname(ctx):
         save_dict()
 
 @bot.command()
+async def distribute(ctx):
+    if ctx.channel.id == datadict['controlchannel']:
+        message = ctx.message.content
+        cmd, amount = message.split(' ', 1)
+        amount = int(amount)
+        log_channel = datadict['logchannel']
+        logchannelobj = await ctx.guild.fetch_channel(log_channel)
+        money_channel = datadict['moneychannel']
+        moneychannelobj = await ctx.guild.fetch_channel(money_channel)
+        moneyname = datadict['money']['name']
+        for playerid in datadict['players']:
+            if datadict['players'][playerid]['messageid'] != 0:
+                playerobj = await ctx.guild.fetch_member(playerid)
+                datadict['money'][playerid]['money'] += amount
+                moneycount = datadict['money'][playerid]['money']
+                moneymsg = datadict['money'][playerid]['messageid']
+                playermsg = await moneychannelobj.fetch_message(moneymsg)
+                await playermsg.edit(content=f"{playerobj.mention} - {moneycount} {moneyname}(s)")
+                await logchannelobj.send(f"{playerobj.mention} has received {amount} NEW {moneyname}(s)")
+
+@bot.command()
 async def mint(ctx):
     if ctx.channel.id == datadict['controlchannel']:
         message = ctx.message.content
@@ -228,6 +266,87 @@ async def mint(ctx):
             playermsg = await moneychannelobj.fetch_message(moneymsg)
             await playermsg.edit(content=f"{mentioned.mention} - {moneycount} {moneyname}(s)")
         await logchannelobj.send(f"{mentioned.mention} has received {amount} NEW {moneyname}(s)")
+        save_dict()
+
+@bot.command()
+async def points(ctx):
+    if ctx.channel.id == datadict['controlchannel']:
+        message = ctx.message.content
+        cmd, target, action, amount = message.split(' ', 3)
+        amount = int(amount)
+        mentioned = ctx.message.mentions[0]
+        player_id = str(mentioned.id)
+        log_channel = datadict['logchannel']
+        logchannelobj = await ctx.guild.fetch_channel(log_channel)
+        points_channel = datadict['pointschannel']
+        pointschannelobj = await ctx.guild.fetch_channel(points_channel)
+        if action == "add":
+            if player_id not in datadict['points']:
+                datadict['points'][player_id] = {}
+                datadict['points'][player_id]['points'] = amount
+                pointmsg = await pointschannelobj.send(f"{mentioned.mention} - {amount} point(s)")
+                datadict['points'][player_id]['messageid'] = pointmsg.id
+            else:
+                datadict['points'][player_id]['points'] += amount
+                pointcount = datadict['points'][player_id]['points']
+                pointmsg = datadict['points'][player_id]['messageid']
+                playermsg = await pointschannelobj.fetch_message(pointmsg)
+                await playermsg.edit(content=f"{mentioned.mention} - {pointcount} point(s)")
+            await logchannelobj.send(f"{mentioned.mention} has received {amount} point(s)")
+        elif action == "subtract":
+            datadict['points'][player_id]['points'] -= amount
+            pointcount = datadict['points'][player_id]['points']
+            pointmsg = datadict['points'][player_id]['messageid']
+            playermsg = await pointschannelobj.fetch_message(pointmsg)
+            await playermsg.edit(content=f"{mentioned.mention} - {pointcount} point(s)")
+            await logchannelobj.send(f"{mentioned.mention} has lost {amount} point(s)")
+        save_dict()
+
+@bot.command()
+async def burn(ctx):
+    message = ctx.message.content
+    cmd, amount = message.split(' ', 1)
+    amount = int(amount)
+    playerobj = ctx.message.author
+    player_id = str(playerobj.id)
+    log_channel = datadict['logchannel']
+    logchannelobj = await ctx.guild.fetch_channel(log_channel)
+    points_channel = datadict['pointschannel']
+    pointschannelobj = await ctx.guild.fetch_channel(points_channel)
+    playertotal = datadict['points'][player_id]['points']
+    if amount > playertotal:
+        await ctx.send(f"YOU DONT HAVE ENOUGH POINTs YA GOOFBALL")
+    else:
+        datadict['points'][player_id]['points'] -= amount
+        player_points = datadict['points'][player_id]['points']
+        player_msg_id = datadict['points'][player_id]['messageid']
+        playermsg = await pointschannelobj.fetch_message(player_msg_id)
+        await playermsg.edit(content=f"{playerobj.mention} - {player_points} point(s)")
+        await logchannelobj.send(f"{playerobj.mention} has burnt {amount} point(s)")
+        save_dict()
+
+@bot.command()
+async def shred(ctx):
+    message = ctx.message.content
+    cmd, amount = message.split(' ', 1)
+    amount = int(amount)
+    playerobj = ctx.message.author
+    player_id = str(playerobj.id)
+    log_channel = datadict['logchannel']
+    logchannelobj = await ctx.guild.fetch_channel(log_channel)
+    money_channel = datadict['moneychannel']
+    moneychannelobj = await ctx.guild.fetch_channel(money_channel)
+    playertotal = datadict['money'][player_id]['money']
+    moneyname = datadict['money']['name']
+    if amount > playertotal:
+        await ctx.send(f"YOU DONT HAVE ENOUGH {moneyname}s YA GOOFBALL")
+    else:
+        datadict['money'][player_id]['money'] -= amount
+        player_money = datadict['money'][player_id]['money']
+        player_msg_id = datadict['money'][player_id]['messageid']
+        playermsg = await moneychannelobj.fetch_message(player_msg_id)
+        await playermsg.edit(content=f"{playerobj.mention} - {player_money} {moneyname}(s)")
+        await logchannelobj.send(f"{playerobj.mention} has shredded {amount} {moneyname}(s)")
         save_dict()
 
 @bot.command()
@@ -349,6 +468,7 @@ async def leave(ctx):
     player_channel = datadict['playerchannel']
     playerchannelobj = await ctx.guild.fetch_channel(player_channel)
     player_message = await playerchannelobj.fetch_message(player_message_id)
+    datadict['players'][author_id]['messageid'] = 0
     await player_message.delete()
     await ctx.message.delete()
 

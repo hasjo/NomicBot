@@ -30,3 +30,15 @@ A proposal has been passed to create a system of "money" so I am adding a few co
 - $give - give a player an amount of money, ezpz
 
 The players implemented a system of money to do who knows what, but I've added the ability to mint new money, set the name of the money and give money to each other. Let's see what happens!
+
+## Tracking points
+I initially had point tracking as a manual task of the game runner, but I wanted the bot to keep track of points to allow for the use of them in the newly implemented points to money and vice versa system.
+As of now, I'm not going to programmatically enforce the conversion rates, but I want to allow the players to burn points or money themselves and empower the game runner to give them their points in a logged manner.
+I am also adding some more functionality to make doing game-related things easier.
+
+added commands
+- $initpoints - set the points channel
+- $points - with actions to add and subtract points
+- $burn - burn points arbitrarily
+- $shred - shred money arbitrarily
+- $distribute - give out the same amount of money to all players at the same time
